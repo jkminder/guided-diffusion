@@ -4,6 +4,7 @@ import blobfile as bf
 from PIL import Image
 import numpy as np
 import os
+import tqdm
 
 def unfold_img(img, size):
     """Unfolds img list of patches."""
@@ -24,17 +25,18 @@ def read_img(img_fn, resize_to=None):
 
 
 
-ROOT = "/cluster/scratch/jminder/RoadSegmentation/data/massachusetts-roads/"
+ROOT = "/cluster/scratch/jminder/RoadSegmentation/data/massachusetts-roads/tiff/"
 OUTDIR = "/cluster/scratch/jminder/RoadDiffusion/data/massachusetts-roads/"
 SIZE = 256
 
-train_files = [file for file in os.listdir(ROOT + "/tiff/train") if file.endswith("tiff")]
-val_files = [file for file in os.listdir(ROOT + "/tiff/val") if file.endswith("tiff")]
-test_files = [file for file in os.listdir(ROOT + "/tiff/test") if file.endswith("tiff")]
+os.makedirs(OUTDIR)
+train_files = ["train/" + file for file in os.listdir(ROOT + "train") if file.endswith("tiff")]
+val_files = ["val/" + file for file in os.listdir(ROOT + "val") if file.endswith("tiff")]
+test_files = ["test/" + file for file in os.listdir(ROOT + "test") if file.endswith("tiff")]
 
 all_files = train_files + val_files + test_files
 
-for file in all_files:
+for file in tqdm.tqdm(all_files):
     im = read_img(ROOT + file, (1792,1792))
     im = np.array(im)
     n = im.shape[0]//SIZE
@@ -45,6 +47,5 @@ for file in all_files:
         for j in range(n):
             patch = im[i*SIZE:(i+1)*SIZE, j*SIZE:(j+1)*SIZE, :]
             if patch.sum() < all_white_limit:
-                outpath = OUTDIR + file + f"-{i}-{j}.jpg"
-                print(outpath)
+                outpath = OUTDIR + file.split("/")[1] + f"-{i}-{j}.jpg"
                 Image.fromarray(patch).save(outpath)
