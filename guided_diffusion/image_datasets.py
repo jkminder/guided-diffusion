@@ -1,6 +1,6 @@
 import math
 import random
-
+import wandb
 from PIL import Image
 import blobfile as bf
 import numpy as np
@@ -60,8 +60,11 @@ def load_data(
         loader = DataLoader(
             dataset, batch_size=batch_size, shuffle=True, num_workers=4, drop_last=True
         )
+    epoch = 0
     while True:
+        wandb.log({"epoch": epoch})
         yield from loader
+        epoch += 1
 
 
 def _list_image_files_recursively(data_dir):

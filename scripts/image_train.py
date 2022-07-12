@@ -3,8 +3,9 @@ Train a diffusion model on images.
 """
 
 import argparse
-
-from guided_diffusion import dist_util, logger
+import wandb
+import torch as th
+from guided_diffusion import logger
 from guided_diffusion.image_datasets import load_data
 from guided_diffusion.resample import create_named_schedule_sampler
 from guided_diffusion.script_util import (
@@ -15,18 +16,32 @@ from guided_diffusion.script_util import (
 )
 from guided_diffusion.train_util import TrainLoop
 
+def dev():
+    """
+    Get the device to use for torch.distributed.
+    """
+    if th.cuda.is_available():
+        return th.device(f"cuda")
+    return th.device("cpu")
 
 def main():
     args = create_argparser().parse_args()
 
-    dist_util.setup_dist()
-    logger.configure()
+    #dist_util.setup_dist()
+    logger.configure(dir=args.log_dir)
+
+    wandb.init(
+        project="CIL-RoadDiffusion", 
+        entity="jkminder",
+        config=args
+        #log_model=True # logs model checkpoints to wandb
+    )
 
     logger.log("creating model and diffusion...")
     model, diffusion = create_model_and_diffusion(
         **args_to_dict(args, model_and_diffusion_defaults().keys())
     )
-    model.to(dist_util.dev())
+    model.to(dev())
     schedule_sampler = create_named_schedule_sampler(args.schedule_sampler, diffusion)
 
     logger.log("creating data loader...")
@@ -54,6 +69,8 @@ def main():
         schedule_sampler=schedule_sampler,
         weight_decay=args.weight_decay,
         lr_anneal_steps=args.lr_anneal_steps,
+        image_size=args.image_size,
+        image_log_interval=args.image_log_interval
     ).run_loop()
 
 
@@ -72,6 +89,8 @@ def create_argparser():
         resume_checkpoint="",
         use_fp16=False,
         fp16_scale_growth=1e-3,
+        log_dir="logs/",
+        image_log_interval=5000
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

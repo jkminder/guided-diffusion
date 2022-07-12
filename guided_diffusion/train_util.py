@@ -2,10 +2,13 @@ import copy
 import functools
 import os
 
+import wandb
 import blobfile as bf
 import torch as th
 from torch.nn.parallel.distributed import DistributedDataParallel as DDP
 from torch.optim import AdamW
+import numpy as np
+from torchvision.utils import make_grid
 
 from . import logger, dist_util
 from .fp16_util import MixedPrecisionTrainer
@@ -32,12 +35,15 @@ class TrainLoop:
         log_interval,
         save_interval,
         resume_checkpoint,
+        image_size,
+        image_log_interval,
         use_fp16=False,
         fp16_scale_growth=1e-3,
         schedule_sampler=None,
         weight_decay=0.0,
         lr_anneal_steps=0,
     ):
+        self.image_size = image_size
         self.model = model
         self.diffusion = diffusion
         self.data = data
@@ -57,7 +63,7 @@ class TrainLoop:
         self.schedule_sampler = schedule_sampler or UniformSampler(diffusion)
         self.weight_decay = weight_decay
         self.lr_anneal_steps = lr_anneal_steps
-
+        self.image_log_interval = image_log_interval
         self.step = 0
         self.resume_step = 0
         self.global_batch = self.batch_size
@@ -140,7 +146,10 @@ class TrainLoop:
             batch, cond = next(self.data)
             self.run_step(batch, cond)
             if self.step % self.log_interval == 0:
-                logger.dumpkvs()
+                out = logger.dumpkvs()
+                wandb.log(dict(out), step=self.step)    
+            if self.step % self.image_log_interval == 0:
+                wandb.log({"outputs": wandb.Image(make_grid(self.sample(4).cpu()).numpy(), caption="Outputs")}, step=self.step)
             if self.step % self.save_interval == 0:
                 self.save()
                 # Run for a finite amount of time in integration tests.
@@ -150,6 +159,22 @@ class TrainLoop:
         # Save the last checkpoint if it wasn't already saved.
         if (self.step - 1) % self.save_interval != 0:
             self.save()
+    
+    def sample(self, batch_size):
+        logger.log("sampling...")
+        sample_fn = (
+            self.diffusion.p_sample_loop
+        )
+        sample = sample_fn(
+            self.model, 
+            (batch_size, 3, self.image_size, self.image_size),
+            clip_denoised=True,
+            model_kwargs={},
+        )
+        sample = ((sample + 1) * 127.5).clamp(0, 255).to(th.uint8)
+        sample = sample.permute(0, 2, 3, 1)
+    
+        return sample
 
     def run_step(self, batch, cond):
         self.forward_backward(batch, cond)
@@ -208,7 +233,7 @@ class TrainLoop:
             param_group["lr"] = lr
 
     def log_step(self):
-        logger.logkv("step", self.step + self.resume_step)
+        logger.logkv("global_step", self.step + self.resume_step)
         logger.logkv("samples", (self.step + self.resume_step + 1) * self.global_batch)
 
     def save(self):
