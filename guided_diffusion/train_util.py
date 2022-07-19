@@ -109,10 +109,11 @@ class TrainLoop:
 
     def _load_and_sync_parameters(self):
         resume_checkpoint = find_resume_checkpoint() or self.resume_checkpoint
-
+        
         if resume_checkpoint:
             self.resume_step = parse_resume_step_from_filename(resume_checkpoint)
             logger.log(f"loading model from checkpoint: {resume_checkpoint}...")
+            resume_checkpoint = th.load(resume_checkpoint)
             self.model.load_state_dict(resume_checkpoint)
 
     def _load_ema_parameters(self, rate):
@@ -142,14 +143,16 @@ class TrainLoop:
         while (
             not self.lr_anneal_steps
             or self.step + self.resume_step < self.lr_anneal_steps
-        ):
+        ):  
+            if self.step == 0:
+                logger.log("starting training loop...")
             batch, cond = next(self.data)
             self.run_step(batch, cond)
             if self.step % self.log_interval == 0:
                 out = logger.dumpkvs()
                 wandb.log(dict(out), step=self.step)    
             if self.step % self.image_log_interval == 0:
-                wandb.log({"outputs": wandb.Image(make_grid(self.sample(4).cpu()).numpy(), caption="Outputs")}, step=self.step)
+                wandb.log({"outputs": wandb.Image(make_grid(self.sample(4).cpu(), nrow=2).permute(1, 2, 0).numpy(), caption="Outputs")}, step=self.step)
             if self.step % self.save_interval == 0:
                 self.save()
                 # Run for a finite amount of time in integration tests.
@@ -172,8 +175,8 @@ class TrainLoop:
             model_kwargs={},
         )
         sample = ((sample + 1) * 127.5).clamp(0, 255).to(th.uint8)
-        sample = sample.permute(0, 2, 3, 1)
-    
+        #sample = sample.permute(0, 2, 3, 1)
+        logger.log(f"sample shape {sample.shape}")
         return sample
 
     def run_step(self, batch, cond):

@@ -5,7 +5,8 @@ from PIL import Image
 import blobfile as bf
 import numpy as np
 from torch.utils.data import DataLoader, Dataset
-
+from guided_diffusion import logger
+import os
 
 def load_data(
     *,
@@ -54,11 +55,11 @@ def load_data(
     )
     if deterministic:
         loader = DataLoader(
-            dataset, batch_size=batch_size, shuffle=False, num_workers=4, drop_last=True
+            dataset, batch_size=batch_size, shuffle=False, num_workers=1, drop_last=True
         )
     else:
         loader = DataLoader(
-            dataset, batch_size=batch_size, shuffle=True, num_workers=4, drop_last=True
+            dataset, batch_size=batch_size, shuffle=True, num_workers=1, drop_last=True
         )
     epoch = 0
     while True:
@@ -69,12 +70,12 @@ def load_data(
 
 def _list_image_files_recursively(data_dir):
     results = []
-    for entry in sorted(bf.listdir(data_dir)):
-        full_path = bf.join(data_dir, entry)
+    for entry in sorted(os.listdir(data_dir)):
+        full_path = os.path.join(data_dir, entry)
         ext = entry.split(".")[-1]
         if "." in entry and ext.lower() in ["jpg", "jpeg", "png", "gif"]:
             results.append(full_path)
-        elif bf.isdir(full_path):
+        elif os.path.isdir(full_path):
             results.extend(_list_image_files_recursively(full_path))
     return results
 
