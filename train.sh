@@ -4,4 +4,4 @@ DIFFUSION_FLAGS="--diffusion_steps 1000 --noise_schedule linear --rescale_learne
 TRAIN_FLAGS="--lr 1e-4 --batch_size 128 --microbatch 16"
 
 
-python scripts/image_train.py --log_dir /cluster/scratch/jminder/RoadDiffusion/logs --data_dir /cluster/scratch/jminder/RoadDiffusion/data/ --resume_checkpoint /cluster/scratch/jminder/RoadDiffusion/logs/model017000.pt $MODEL_FLAGS $DIFFUSION_FLAGS $TRAIN_FLAGS
+python scripts/image_train.py --log_dir /cluster/scratch/jminder/RoadDiffusion/logs --data_dir /cluster/scratch/jminder/RoadDiffusion/data/ --resume_checkpoint /cluster/scratch/jminder/RoadDiffusion/logs/model035000.pt $MODEL_FLAGS $DIFFUSION_FLAGS $TRAIN_FLAGS
