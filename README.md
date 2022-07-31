@@ -1,3 +1,18 @@
+# Guided Diffusion for non MPI systems
+This repository is a modification of the original repository that simplifies training on a single GPU machine. It was mainly used to train a DDPM that generates aerial images. It was trained on the [Massachusetts Roads Dataset](https://www.kaggle.com/datasets/balraj98/massachusetts-roads-dataset). You can download the checkpoint [here](https://drive.google.com/file/d/1nn8b97NS598tvdGB5WiAAcY8Nk1v2XNV/view?usp=sharing).
+
+To train your own model run
+```console
+sh train.sh PATH_TO_LOGDIR PATH_TO_DATA
+```
+To resume training run
+```console
+sh resume_train.sh PATH_TO_LOGDIR PATH_TO_DATA PATH_TO_PRETRAINED_MODEL
+```
+
+Check the `train.sh` and `resume_train.sh` for details on the model parameters.
+
+
 # guided-diffusion
 
 This is the codebase for [Diffusion Models Beat GANS on Image Synthesis](http://arxiv.org/abs/2105.05233).

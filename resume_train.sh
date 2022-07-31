@@ -4,4 +4,4 @@ DIFFUSION_FLAGS="--diffusion_steps 1000 --noise_schedule linear --rescale_learne
 TRAIN_FLAGS="--lr 1e-4 --batch_size 128 --microbatch 8"
 
 
-python scripts/image_train.py --log_dir $1 --data_dir $2 $MODEL_FLAGS $DIFFUSION_FLAGS $TRAIN_FLAGS
+python scripts/image_train.py --log_dir $1 --data_dir $2 --resume_checkpoint $3 $MODEL_FLAGS $DIFFUSION_FLAGS $TRAIN_FLAGS
