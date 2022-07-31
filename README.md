@@ -12,6 +12,7 @@ sh resume_train.sh PATH_TO_LOGDIR PATH_TO_DATA PATH_TO_PRETRAINED_MODEL
 
 Check the `train.sh` and `resume_train.sh` for details on the model parameters.
 
+Be aware that training the model on your own requires a lot of GPU memory. We trained our model on a GPU with 32GB memory.
 
 # guided-diffusion
 
